@@ -25,8 +25,8 @@ df.to_excel('index-data-sti.xlsx', index=False)
 # create dataframe to excel file
 df2 = pd.DataFrame()
 df2['sp500'] = sp500_data['Close']
-df2['date'] = df.index
-df2['date'] = df['date'].apply(lambda x: x.strftime('%Y-%m-%d'))
+df2['date'] = df2.index
+df2['date'] = df2['date'].apply(lambda x: x.strftime('%Y-%m-%d'))
 
 # export to excel
 df2.to_excel('index-data-sp500.xlsx', index=False)
