@@ -1,4 +1,4 @@
-# ========================== Imports ==========================
+# ========================== Imports ===================================
 import pandas as pd
 import numpy as np
 import numpy_financial as npf
@@ -26,7 +26,7 @@ def fetch_asset_data(tickers, start_date, end_date):
     data = pd.DataFrame()
     for ticker in tickers:
         close = yf.Ticker(ticker).history(start=start_date, end=end_date)['Close']
-        data[ticker] = close.resample('M').last()
+        data[ticker] = close.resample('ME').last()
     return data
 
 def annualized_return(df):
@@ -38,14 +38,14 @@ def annualized_covariance(df):
 def mean_std(df):
     return df.std().mean() * np.sqrt(12)
 
-# ========================== Step 1: Export Index Data ==========================
+# ==================== Step 1: Export Index Data =======================
 
 start_date = '1997-01-01'
 end_date = '2016-12-31'
 get_index_data('^STI', start_date, end_date, 'index-data-sti.xlsx')
 get_index_data('^GSPC', start_date, end_date, 'index-data-sp500.xlsx')
 
-# ========================== Step 2: Calculate CAGR ==========================
+# ==================== Step 2: Calculate CAGR ==========================
 
 cagr, cumulative_return = calculate_cagr(
     start_value=100000,
@@ -55,13 +55,13 @@ cagr, cumulative_return = calculate_cagr(
 )
 print(f"CAGR: {cagr:.4f}, Cumulative Return: {cumulative_return:.4f}")
 
-# ========================== Step 3: Required Returns ==========================
+# ==================== Step 3: Required Returns =========================
 
 net_flows = [10000, -20000, -50000, -50000, -20000]
 returns, avg_required_return = required_returns(500000, net_flows)
 print(f"Average Required Return: {avg_required_return:.4f}")
 
-# ========================== Step 4: Optimal Portfolio Construction ==========================
+# =================== Step 4: Optimal Portfolio Construction ============
 
 # Load ETF data
 df_base = pd.read_excel('./raw-data/etfs-reit-gold.xlsx')
@@ -84,7 +84,7 @@ std_avg = mean_std(returns_df)
 expected_returns = annualized_return(returns_df)
 n_assets = len(expected_returns)
 
-# ========================== Step 5: Portfolio Optimization ==========================
+# =================== Step 5: Portfolio Optimization ===================
 
 weights = cp.Variable(n_assets)
 constraints = [weights >= 0, cp.sum(weights) == 1]
@@ -95,14 +95,14 @@ portfolio_risk = cp.quad_form(weights, cov_matrix) ** 0.5
 portfolio_return = expected_returns.values @ weights
 
 problem = cp.Problem(cp.Maximize(portfolio_return), constraints + [portfolio_risk <= target_std])
-problem.solve(qcp=True)
+problem.solve(solver=cp.ECOS, qcp=True, verbose=True)
 
 print("Optimized Weights:", weights.value)
 print("Expected Return:", portfolio_return.value)
 print("Standard Deviation:", portfolio_risk.value)
 print("Sharpe Ratio:", (portfolio_return.value - risk_free_rate) / portfolio_risk.value)
 
-# ========================== Step 6: Efficient Frontier ==========================
+# ================== Step 6: Efficient Frontier =======================
 
 target_returns = np.linspace(0, max(expected_returns), 10000)
 portfolio_std_dev, portfolio_returns = [], []
